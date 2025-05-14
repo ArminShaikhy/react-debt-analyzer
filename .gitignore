@@ -1,0 +1,44 @@
+# Ignore bundler config
+/.bundle
+Gemfile.lock
+history.json
+# Ignore log files and temp files
+/log/*
+/tmp/*
+!/log/.keep
+!/tmp/.keep
+
+# Ignore database files
+/db/*.sqlite3
+/db/*.sqlite3-journal
+
+# Ignore node modules (if using JavaScript dependencies)
+/node_modules
+
+# Ignore compiled files
+/public/assets
+/public/packs
+/public/packs-test
+/public/assets
+/public/packs
+/public/packs-test
+
+# Ignore coverage reports
+/coverage
+
+# Ignore environment files
+.env
+.env.*
+
+# Ignore byebug command history
+.byebug_history
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore editor-specific files
+*.swp
+*.swo
+.idea/
+.vscode/

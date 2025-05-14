@@ -1,0 +1,6 @@
+require_relative 'react_analyzer/analyzer'
+require_relative 'react_analyzer/code_blocks'
+require_relative 'react_analyzer/file_utils'
+require_relative 'react_analyzer/code_metrics'
+require_relative 'react_analyzer/history'
+require_relative 'react_analyzer/output'

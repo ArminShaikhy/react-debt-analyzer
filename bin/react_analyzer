@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+
+require_relative '../lib/react_analyzer'
+require 'colorize'
+
+include ReactAnalyzer
+
+path = ARGV[0] || History.prompt_for_path
+
+unless File.exist?(File.join(path, 'package.json'))
+  puts "Error: Not a valid React/Next.js project.".colorize(:red)
+  exit 1
+end
+
+analyzer = Analyzer.new(path)
+results = analyzer.analyze
+
+Output.print_results(results, path)
+
+History.save_path(path)
