@@ -1,20 +1,23 @@
 module ReactAnalyzer
-  module CodeMetrics
-    def self.count_use_effect(file_path)
-      ::File.readlines(file_path).join.scan(/\buseEffect\b/).count
+  class CodeMetrics
+    def self.line_count(file)
+      File.foreach(file).count
     end
 
-    def self.count_use_state(file_path)
-      ::File.readlines(file_path).join.scan(/\buseState\b/).count
+    def self.use_effect_count(file)
+      File.read(file).scan(/\buseEffect\b/).size
     end
 
-    def self.count_imports(file_path)
-      lines = ::File.readlines(file_path)
-      lines.select { |line| line.strip.start_with?('import') }.size
+    def self.use_state_count(file)
+      File.read(file).scan(/\buseState\b/).size
     end
 
-    def self.count_returns(file_path)
-      ::File.readlines(file_path).join.scan(/\breturn\b/).count
+    def self.import_count(file)
+      File.readlines(file).count { |line| line.strip.start_with?('import') }
+    end
+
+    def self.return_count(file)
+      File.read(file).scan(/\breturn\b/).size
     end
   end
 end

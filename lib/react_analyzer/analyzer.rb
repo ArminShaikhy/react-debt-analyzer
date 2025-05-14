@@ -1,19 +1,44 @@
+require_relative 'file_scanner'
+require_relative 'code_metrics'
+require_relative 'duplicate_detector'
+require_relative 'output'
+
 module ReactAnalyzer
   class Analyzer
-    def initialize(base_path)
-      @base_path = File.expand_path(base_path)
-      @files = FileUtils.search_files(@base_path)
-    end
-
-    def analyze
-      {
-        long_files: @files.select { |f| FileUtils.line_count(f) > 150 },
-        many_use_effects: @files.select { |f| CodeMetrics.count_use_effect(f) > 3 },
-        many_use_states: @files.select { |f| CodeMetrics.count_use_state(f) > 4 },
-        many_imports: @files.select { |f| CodeMetrics.count_imports(f) > 8 },
-        many_returns: @files.select { |f| CodeMetrics.count_returns(f) > 3 },
-        duplicated_blocks: CodeBlocks.find_similar(@files)
+    def self.run(path, config = {})
+      thresholds = {
+        max_use_effect: config[:max_use_effect] || 3,
+        max_use_state: config[:max_use_state] || 4,
+        max_lines: config[:max_lines] || 150,
+        max_imports: config[:max_imports] || 8,
+        max_returns: config[:max_returns] || 3,
+        min_duplicate_blocks: config[:min_duplicate_blocks] || 5
       }
+
+      files = FileScanner.search_files(path)
+
+      Output.warn_no_files_found if files.empty?
+
+      # Filtered files by bad practices
+      long_files        = files.select { |f| CodeMetrics.line_count(f) > thresholds[:max_lines] }
+      heavy_effects     = files.select { |f| CodeMetrics.use_effect_count(f) > thresholds[:max_use_effect] }
+      heavy_states      = files.select { |f| CodeMetrics.use_state_count(f) > thresholds[:max_use_state] }
+      import_bloat      = files.select { |f| CodeMetrics.import_count(f) > thresholds[:max_imports] }
+      return_heavy      = files.select do |f|
+        %w[.jsx .tsx].any? { |ext| f.end_with?(ext) } &&
+        CodeMetrics.return_count(f) > thresholds[:max_returns]
+      end
+
+      # Output
+      Output.print_section("Files with more than #{thresholds[:max_lines]} lines", long_files, path)
+      Output.print_section("Files with more than #{thresholds[:max_use_effect]} useEffect hooks", heavy_effects, path)
+      Output.print_section("Files with more than #{thresholds[:max_use_state]} useState hooks", heavy_states, path)
+      Output.print_section("Files with more than #{thresholds[:max_imports]} imports", import_bloat, path)
+      Output.print_section("Files with more than #{thresholds[:max_returns]} return statements", return_heavy, path)
+
+      # Duplicates
+      similar = DuplicateDetector.find_similar_code_blocks(files, thresholds[:min_duplicate_blocks])
+      Output.print_similar_blocks(similar, path)
     end
   end
 end

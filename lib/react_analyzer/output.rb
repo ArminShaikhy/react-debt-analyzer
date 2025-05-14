@@ -1,48 +1,37 @@
 require 'colorize'
+require 'pathname'
 
 module ReactAnalyzer
-  module Output
-    def self.print_results(results, base_path)
-      puts "\nFiles with more than 150 lines:".colorize(:green)
-      print_list(results[:long_files], base_path)
+  class Output
+    def self.relative(file, base)
+      Pathname.new(file).relative_path_from(Pathname.new(base)).to_s
+    end
 
-      puts "\nFiles with > 3 'useEffect':".colorize(:green)
-      print_list(results[:many_use_effects], base_path)
-
-      puts "\nFiles with > 4 'useState':".colorize(:green)
-      print_list(results[:many_use_states], base_path)
-
-      puts "\nFiles with > 8 imports:".colorize(:green)
-      results[:many_imports].each do |file|
-        count = CodeMetrics.count_imports(file)
-        puts "#{relative(file, base_path)} (#{count} imports)"
+    def self.print_section(title, files, base)
+      puts "\n#{title}:".colorize(:green)
+      if files.empty?
+        puts "  No files found.".colorize(:light_black)
+      else
+        files.each { |f| puts "  #{relative(f, base)}" }
       end
+    end
 
-      puts "\nFiles with > 3 returns:".colorize(:green)
-      results[:many_returns].each do |file|
-        count = CodeMetrics.count_returns(file)
-        puts "#{relative(file, base_path)} (#{count} returns)"
-      end
-
+    def self.print_similar_blocks(similar, base)
       puts "\nFiles with similar code blocks:".colorize(:green)
-      results[:duplicated_blocks].each do |file, similarities|
-        puts "#{relative(file, base_path)} has similarities with:"
-        similarities.each do |entry|
-          puts "  #{relative(entry[:file], base_path)} - #{entry[:shared]} shared blocks"
+      if similar.empty?
+        puts "  No duplicates found.".colorize(:light_black)
+      else
+        similar.each do |file, entries|
+          puts "  #{relative(file, base)} has similar blocks with:".colorize(:blue)
+          entries.each do |entry|
+            puts "    #{relative(entry[:file], base)} (#{entry[:checksums].size} common blocks)"
+          end
         end
       end
     end
 
-    def self.print_list(files, base_path)
-      if files.empty?
-        puts "No files found."
-      else
-        files.each { |f| puts relative(f, base_path) }
-      end
-    end
-
-    def self.relative(file, base)
-      file.sub(/^#{base}\//, '')
+    def self.warn_no_files_found
+      puts "No JavaScript or TypeScript files found.".colorize(:yellow)
     end
   end
 end

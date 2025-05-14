@@ -1,20 +1,93 @@
 #!/usr/bin/env ruby
 
-require_relative '../lib/react_analyzer'
+require 'json'
 require 'colorize'
+require_relative '../lib/react_analyzer/analyzer'
+require_relative '../lib/react_analyzer/history'
 
-include ReactAnalyzer
+# Generate .reactanalyzerrc.json file if requested
+if ARGV.include?('--init-config')
+  File.write('.reactanalyzerrc.json', JSON.pretty_generate({
+    max_use_effect: 3,
+    max_use_state: 4,
+    max_lines: 150,
+    max_imports: 8,
+    max_returns: 3,
+    min_duplicate_blocks: 5
+  }))
+  puts ".reactanalyzerrc.json generated.".colorize(:green)
+  exit
+end
 
-path = ARGV[0] || History.prompt_for_path
+def prompt_for_path(history)
+  if history.empty?
+    print "Enter a path: "
+    gets.chomp
+  else
+    puts "Choose a path from history:".colorize(:green)
+    history.each_with_index do |entry, index|
+      puts "#{index + 1}. #{File.basename(entry['path'])} (#{entry['timestamp']})"
+    end
+    print "Enter the number of the path or press Enter to enter a new path: "
+    choice = gets.chomp
+    if choice.empty? || choice.to_i < 1 || choice.to_i > history.size
+      print "Enter a new path: "
+      gets.chomp
+    else
+      history[choice.to_i - 1]['path']
+    end
+  end
+end
 
-unless File.exist?(File.join(path, 'package.json'))
-  puts "Error: Not a valid React/Next.js project.".colorize(:red)
+def load_config(path)
+  config_path = File.join(path, '.reactanalyzerrc.json')
+  puts "Looking for config at: #{config_path}"  # Add this line to debug
+  if File.exist?(config_path)
+    JSON.parse(File.read(config_path), symbolize_names: true)
+  else
+    puts "No .reactanalyzerrc.json found. Using default thresholds.".colorize(:yellow)
+    {
+      max_use_effect: 3,
+      max_use_state: 4,
+      max_lines: 150,
+      max_imports: 8,
+      max_returns: 3,
+      min_duplicate_blocks: 5
+    }
+  end
+end
+
+
+def valid_react_project?(path)
+  package_path = File.join(path, 'package.json')
+  return false unless File.exist?(package_path)
+
+  content = File.read(package_path)
+  content.include?('react') || content.include?('next')
+end
+
+# --- Main execution ---
+
+history = ReactAnalyzer::History.load
+path = ARGV[0].to_s.strip
+path = prompt_for_path(history) if path.empty?
+
+if path.empty?
+  puts "Error: Path cannot be empty.".colorize(:red)
   exit 1
 end
 
-analyzer = Analyzer.new(path)
-results = analyzer.analyze
+unless valid_react_project?(path)
+  puts "Error: '#{path}' does not appear to be a valid React.js/Next.js project.".colorize(:red)
+  exit 1
+end
 
-Output.print_results(results, path)
+config = load_config(path)
+puts "Analyzing: #{path}".colorize(:blue)
 
-History.save_path(path)
+# Run analysis with the loaded config
+ReactAnalyzer::Analyzer.run(path, config)
+
+# Save the history of paths analyzed
+ReactAnalyzer::History.add(path, history)
+ReactAnalyzer::History.save(history)

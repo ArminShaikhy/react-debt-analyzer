@@ -2,6 +2,7 @@
 /.bundle
 Gemfile.lock
 history.json
+.reactanalyzerrc.json
 # Ignore log files and temp files
 /log/*
 /tmp/*
