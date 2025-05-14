@@ -1,8 +1,4 @@
-Here's a complete `README.md` for your **React Debt Analyzer** project:
-
----
-
-## 📊 React Debt Analyzer
+📊 React Debt Analyzer
 
 A command-line Ruby tool to analyze React and Next.js projects for common code quality issues and anti-patterns — such as bloated components, excessive hooks, repeated logic, and more.
 
